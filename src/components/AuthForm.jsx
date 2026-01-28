@@ -30,6 +30,29 @@ export default function AuthForm() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  /* 
+    Dynamic Redirect URL helper
+    In development use localhost, in production use site url.
+    We prefer window.location.origin as it works dynamically for all environments (dev, preview, prod).
+  */
+  /* 
+    Dynamic Redirect URL helper
+    In development use localhost, in production use site url.
+    We prefer window.location.origin as it works dynamically for all environments (dev, preview, prod).
+  */
+  const getURL = () => {
+    let url =
+      import.meta.env?.VITE_SITE_URL ?? // Set this to your site URL in production env.
+      window.location.origin ??
+      'http://localhost:3000/';
+
+    // Make sure to include `https://` when not localhost.
+    url = url.startsWith('http') ? url : `https://${url}`;
+    // Make sure to include a trailing `/`.
+    url = url.endsWith('/') ? url : `${url}/`;
+    return url;
+  };
+
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const signInWithGoogle = async () => {
@@ -37,11 +60,17 @@ export default function AuthForm() {
     setMessage(null);
     // Preserve redirect param for Google OAuth
     const params = new URLSearchParams(window.location.search);
-    const redirectUrl = params.get('redirect') || '/';
+    const redirectPath = params.get('redirect') || '/';
+
+    // Construct the full redirect URL
+    // dbURL() returns base with trailing slash, so we remove leading slash from path if present
+    const cleanPath = redirectPath.startsWith('/') ? redirectPath.slice(1) : redirectPath;
+    const fullRedirectUrl = `${getURL()}${cleanPath}`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}${redirectUrl}`,
+        redirectTo: fullRedirectUrl, // Use the dynamic URL
       },
     });
     if (error) {

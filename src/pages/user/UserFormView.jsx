@@ -49,7 +49,7 @@ const UserFormView = () => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [showProfileModal, setShowProfileModal] = useState(false);
-    const [missingDetails, setMissingDetails] = useState({ name: '', mobile: '' });
+    const [missingDetails, setMissingDetails] = useState({ name: '', mobile: '', github: '', linkedin: '' });
 
     // Form State
     const [answers, setAnswers] = useState({});
@@ -71,6 +71,18 @@ const UserFormView = () => {
                     .eq('uid', user.id)
                     .single();
                 setProfile(profileData);
+
+                // Check for existing registration
+                const { data: existingReg } = await supabase
+                    .from('program_registrations')
+                    .select('id')
+                    .eq('program_id', id)
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                if (existingReg) {
+                    setSubmitted(true);
+                }
             }
 
             // Fetch Program (Public)
@@ -140,16 +152,20 @@ const UserFormView = () => {
         // Profile Validation
         const hasName = profile?.display_name && profile.display_name.trim() !== '';
         const hasMobile = profile?.phone_number && profile.phone_number.trim() !== '';
+        const hasGithub = profile?.github_url && profile.github_url.trim() !== '';
+        const hasLinkedin = profile?.linkedin_url && profile.linkedin_url.trim() !== '';
 
-        if (!hasName || !hasMobile) {
+        if (!hasName || !hasMobile || !hasGithub || !hasLinkedin) {
             setMissingDetails({
                 name: hasName ? profile.display_name : '',
-                mobile: hasMobile ? profile.phone_number : ''
+                mobile: hasMobile ? profile.phone_number : '',
+                github: hasGithub ? profile.github_url : '',
+                linkedin: hasLinkedin ? profile.linkedin_url : ''
             });
             setShowProfileModal(true);
         } else {
             // Proceed to submit with existing details
-            finalSubmit(profile.display_name, profile.phone_number);
+            finalSubmit(profile.display_name, profile.phone_number, profile.github_url, profile.linkedin_url);
         }
     };
 
@@ -159,28 +175,72 @@ const UserFormView = () => {
             return;
         }
 
+        // Basic URL validation
+        const validateUrl = (url) => {
+            if (!url) return '';
+            return url.startsWith('http') ? url : `https://${url}`;
+        };
+
+        const githubUrl = validateUrl(missingDetails.github.trim());
+        const linkedinUrl = validateUrl(missingDetails.linkedin.trim());
+
+        if (missingDetails.github && !githubUrl) {
+            toast.error('Please enter a valid GitHub URL');
+            return;
+        }
+
+        if (missingDetails.linkedin && !linkedinUrl) {
+            toast.error('Please enter a valid LinkedIn URL');
+            return;
+        }
+
         // Optionally update the user's profile in the DB so they don't have to enter it again
         try {
             await supabase.from('users').update({
                 display_name: missingDetails.name,
-                phone_number: missingDetails.mobile
+                phone_number: missingDetails.mobile,
+                github_url: githubUrl,
+                linkedin_url: linkedinUrl
             }).eq('uid', user.id);
 
             // Proceed to final submit
-            finalSubmit(missingDetails.name, missingDetails.mobile);
+            finalSubmit(missingDetails.name, missingDetails.mobile, githubUrl, linkedinUrl);
             setShowProfileModal(false);
 
         } catch (err) {
             console.error("Error updating profile", err);
             // Even if profile update fails, try to submit the form with the provided details
-            finalSubmit(missingDetails.name, missingDetails.mobile);
+            finalSubmit(missingDetails.name, missingDetails.mobile, githubUrl, linkedinUrl);
             setShowProfileModal(false);
         }
     };
 
-    const finalSubmit = async (userName, userMobile) => {
+    const finalSubmit = async (userName, userMobile, githubUrl, linkedinUrl) => {
         setSubmitting(true);
         try {
+            // Safeguard: Check if already submitted
+            const { data: existingReg } = await supabase
+                .from('program_registrations')
+                .select('id')
+                .eq('program_id', program.id)
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (existingReg) {
+                toast.error('You have already submitted this application.');
+                setSubmitted(true);
+                return;
+            }
+
+            // Append social links to answers or a metadata field if present
+            // Since we don't have dedicated columns in program_registrations schema confirmed, 
+            // we will add them to 'answers' ensuring they are captured.
+            const submissionAnswers = {
+                ...answers,
+                github_profile: githubUrl,
+                linkedin_profile: linkedinUrl
+            };
+
             const { error } = await supabase
                 .from('program_registrations')
                 .insert({
@@ -189,7 +249,7 @@ const UserFormView = () => {
                     user_name: userName,
                     user_email: user.email,
                     user_mobile: userMobile,
-                    answers: answers,
+                    answers: submissionAnswers, // Updated answers with social links
                     status: 'submitted',
                     submitted_at: new Date()
                 });
@@ -408,6 +468,26 @@ const UserFormView = () => {
                                         onChange={(e) => setMissingDetails({ ...missingDetails, mobile: e.target.value })}
                                         className="w-full bg-gray-50 border-[2px] border-gray-200 focus:border-[#0061FE] focus:outline-none p-3 font-bold transition-all"
                                         placeholder="e.g. +91 98765 43210"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">GitHub URL</label>
+                                    <input
+                                        type="url"
+                                        value={missingDetails.github}
+                                        onChange={(e) => setMissingDetails({ ...missingDetails, github: e.target.value })}
+                                        className="w-full bg-gray-50 border-[2px] border-gray-200 focus:border-[#0061FE] focus:outline-none p-3 font-bold transition-all"
+                                        placeholder="https://github.com/username"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">LinkedIn URL</label>
+                                    <input
+                                        type="url"
+                                        value={missingDetails.linkedin}
+                                        onChange={(e) => setMissingDetails({ ...missingDetails, linkedin: e.target.value })}
+                                        className="w-full bg-gray-50 border-[2px] border-gray-200 focus:border-[#0061FE] focus:outline-none p-3 font-bold transition-all"
+                                        placeholder="https://linkedin.com/in/username"
                                     />
                                 </div>
                             </div>
