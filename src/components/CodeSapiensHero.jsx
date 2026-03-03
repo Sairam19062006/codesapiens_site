@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Menu, X, Github, Linkedin, Youtube, Users, Calendar, Code, Award, Crown, Rocket, Zap, Globe, Cpu, Handshake, Heart, ArrowUpRight, Instagram, Twitter, MessageCircle, Megaphone, Sparkles } from 'lucide-react';
@@ -571,28 +571,36 @@ const NoticeSection = () => {
 const CodeSapiensHero = () => {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
+
+    // Fallback community photos when Supabase credentials are missing
+    const fallbackCommunityPhotos = [
+        { id: 'fb-1', title: 'November 2025 Meetup', description: 'Monthly community gathering', image_url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&h=450&fit=crop', order_number: 1 },
+        { id: 'fb-2', title: 'October 2025 Meetup', description: 'Tech talks & networking', image_url: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=600&h=450&fit=crop', order_number: 2 },
+        { id: 'fb-3', title: 'September 2025 Meetup', description: 'Workshop & collaboration', image_url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&h=450&fit=crop', order_number: 3 },
+        { id: 'fb-4', title: 'August 2025 Meetup', description: 'Hackathon kickoff', image_url: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=600&h=450&fit=crop', order_number: 4 },
+        { id: 'fb-5', title: 'May 2025 Meetup', description: 'Community celebration', image_url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=600&h=450&fit=crop', order_number: 5 },
+        { id: 'fb-6', title: 'June 2024 Meetup', description: 'First anniversary meetup', image_url: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=600&h=450&fit=crop', order_number: 6 },
+    ];
+
+    // Fallback hall of fame entries when Supabase credentials are missing
+    const fallbackHallOfFame = [
+        { id: 'hof-1', name: 'Sample Achiever', achievement: 'Outstanding contributor', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop', is_active: true },
+    ];
+
     const [communityPhotos, setCommunityPhotos] = useState([]);
+    const [hallOfFameEntries, setHallOfFameEntries] = useState([]);
 
     // Data Fetching
     useEffect(() => {
         const fetchData = async () => {
             const { data: hof } = await supabase.from('hall_of_fame').select('*').eq('is_active', true).order('created_at', { ascending: false });
-            if (hof) setHallOfFameEntries(hof);
+            setHallOfFameEntries(hof && hof.length > 0 ? hof : fallbackHallOfFame);
 
             const { data: photos } = await supabase.from('community_photos').select('*').eq('is_active', true).order('order_number', { ascending: true });
-            if (photos) setCommunityPhotos(photos);
+            setCommunityPhotos(photos && photos.length > 0 ? photos : fallbackCommunityPhotos);
         };
         fetchData();
     }, []);
-
-    // Scroll Progress
-    const { scrollY } = useScroll();
-
-    // Geometric Shape Animation
-    const shapeScale = useTransform(scrollY, [0, 600], [1, 0.2]);
-    const shapeY = useTransform(scrollY, [0, 600], [0, 200]);
-    const shapeOpacity = useTransform(scrollY, [0, 400], [0.8, 0]);
 
     // Content for Sticky Scroll
 
@@ -612,21 +620,21 @@ const CodeSapiensHero = () => {
 
     return (
         <div className="bg-[#F7F5F2] text-[#1E1919] min-h-screen font-sans overflow-x-hidden selection:bg-[#0061FE] selection:text-white">
-            {/* Navigation - Dark Mode for Hero */}
-            <nav className="fixed top-0 w-full z-50 bg-[#101010]/90 backdrop-blur-md text-white border-b border-white/10">
-                <div className="container mx-auto px-6 py-6 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <img src="https://res.cloudinary.com/dqudvximt/image/upload/v1756797708/WhatsApp_Image_2025-09-02_at_12.45.18_b15791ea_rnlwrz.jpg" alt="CodeSapiens Logo" className="w-10 h-10 rounded-full object-cover" />
-                        <span className="text-xl font-bold tracking-tight">CodeSapiens</span>
+            {/* Navigation */}
+            <nav className="fixed top-0 w-full z-50 bg-[#060611]/80 backdrop-blur-xl text-white border-b border-white/[0.06]">
+                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2.5">
+                        <img src="https://res.cloudinary.com/dqudvximt/image/upload/v1756797708/WhatsApp_Image_2025-09-02_at_12.45.18_b15791ea_rnlwrz.jpg" alt="CodeSapiens Logo" className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10" />
+                        <span className="text-lg font-bold tracking-tight">CodeSapiens</span>
                     </div>
-                    <div className="hidden md:flex items-center gap-8 font-medium text-golden-1">
-                        <a href="#vision" className="hover:text-[#0061FE] transition-colors">Vision</a>
-                        <a href="/programs" className="hover:text-[#0061FE] transition-colors">Programs</a>
-                        <a href="/meetups" className="hover:text-[#0061FE] transition-colors">Meetups</a>
-                        <a href="#events" className="hover:text-[#0061FE] transition-colors">Events</a>
-                        <a href="#community" className="hover:text-[#0061FE] transition-colors">Community</a>
-                        <button onClick={() => navigate('/auth')} className="hover:text-[#0061FE]">Log in</button>
-                        <button onClick={() => navigate('/auth')} className="bg-white text-black px-5 py-2.5 rounded-sm hover:bg-gray-200 transition-colors font-bold">
+                    <div className="hidden md:flex items-center gap-7 text-sm font-medium text-gray-300">
+                        <a href="#vision" className="hover:text-white transition-colors duration-200">Vision</a>
+                        <a href="/programs" className="hover:text-white transition-colors duration-200">Programs</a>
+                        <a href="/meetups" className="hover:text-white transition-colors duration-200">Meetups</a>
+                        <a href="#events" className="hover:text-white transition-colors duration-200">Events</a>
+                        <a href="#community" className="hover:text-white transition-colors duration-200">Community</a>
+                        <button onClick={() => navigate('/auth')} className="hover:text-white transition-colors duration-200">Log in</button>
+                        <button onClick={() => navigate('/auth')} className="bg-gradient-to-r from-[#0061FE] to-[#00C6F7] text-white px-5 py-2 rounded-lg text-sm font-bold hover:shadow-[0_0_24px_rgba(0,97,254,0.4)] transition-all duration-300 hover:-translate-y-px">
                             Get Started
                         </button>
                     </div>
@@ -651,111 +659,153 @@ const CodeSapiensHero = () => {
             )}
 
             {/* Hero Section */}
-            <section className="relative min-h-screen bg-[#101010] text-white flex items-center overflow-hidden">
-                <div className="absolute inset-0 z-0 opacity-20"
-                    style={{
-                        backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)',
-                        backgroundSize: '50px 50px'
-                    }}>
+            <section className="relative min-h-screen bg-[#060611] text-white flex items-center overflow-hidden">
+                {/* ── ambient background layers ── */}
+                <div className="absolute inset-0 z-0">
+                    {/* subtle grid */}
+                    <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+                    {/* radial vignette */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(0,97,254,0.15),transparent)]" />
                 </div>
-                <motion.div
-                    className="absolute inset-0 md:right-0 md:left-auto md:w-1/2 h-full pointer-events-none z-0 flex items-center justify-center md:justify-end"
-                    style={{ scale: shapeScale, y: shapeY, opacity: shapeOpacity }}
-                >
-                    <svg viewBox="0 0 800 800" className="w-full h-full md:w-full md:h-full opacity-40 md:opacity-60">
-                        <motion.path
-                            d="M400,200 L600,300 L400,400 L200,300 Z"
-                            fill="none" stroke="#0061FE" strokeWidth="1.5"
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: 1 }}
-                            transition={{ duration: 2, ease: "easeInOut" }}
-                        />
-                        <motion.path
-                            d="M400,400 L600,500 L400,600 L200,500 Z"
-                            fill="none" stroke="#F7F5F2" strokeWidth="1.5"
-                            initial={{ pathLength: 0, opacity: 1 }}
-                            animate={{ pathLength: 1, opacity: 1 }}
-                            transition={{ duration: 2, delay: 0.5, ease: "easeInOut" }}
-                        />
-                        <motion.path
-                            d="M400,600 L600,700 L400,800 L200,700 Z"
-                            fill="none" stroke="#9B0032" strokeWidth="1.5"
-                            initial={{ pathLength: 0, opacity: 0 }}
-                            animate={{ pathLength: 1, opacity: 1 }}
-                            transition={{ duration: 2, delay: 1, ease: "easeInOut" }}
-                        />
-                        <motion.line x1="200" y1="300" x2="200" y2="700" stroke="#333" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 1 }} />
-                        <motion.line x1="600" y1="300" x2="600" y2="700" stroke="#333" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 1 }} />
-                        <motion.line x1="400" y1="400" x2="400" y2="600" stroke="#333" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.5, delay: 1 }} />
-                    </svg>
-                </motion.div>
 
-                <div className="container mx-auto px-6 relative z-10 pt-20">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* floating gradient orbs */}
+                <motion.div animate={{ y: [0, -25, 0], x: [0, 12, 0], scale: [1, 1.12, 1] }} transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }} className="absolute -top-32 -left-32 w-[420px] h-[420px] rounded-full bg-[#0061FE]/25 blur-[120px] pointer-events-none" />
+                <motion.div animate={{ y: [0, 20, 0], x: [0, -18, 0], scale: [1, 1.1, 1] }} transition={{ duration: 11, repeat: Infinity, delay: 2, ease: 'easeInOut' }} className="absolute top-1/4 -right-24 w-[350px] h-[350px] rounded-full bg-[#00C6F7]/20 blur-[120px] pointer-events-none" />
+                <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 10, repeat: Infinity, delay: 4, ease: 'easeInOut' }} className="absolute bottom-0 left-1/3 w-[300px] h-[300px] rounded-full bg-[#0061FE]/15 blur-[100px] pointer-events-none" />
+
+                {/* ── content ── */}
+                <div className="container mx-auto px-6 relative z-10 pt-28 pb-20">
+                    <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                        {/* Left — Copy */}
                         <motion.div
-                            initial={{ opacity: 0, y: 30 }}
+                            initial={{ opacity: 0, y: 40 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.2 }}
-                            className="max-w-4xl"
+                            transition={{ duration: 0.8, delay: 0.15 }}
+                            className="max-w-2xl"
                         >
-                            <h1 className="text-5xl md:text-7xl font-extrabold leading-[1] tracking-tighter mb-8 font-archivo-black">
-                                CodeSapiens<span className="text-[#0061FE]">.</span>
-                            </h1>
-                            <p className="text-golden-1 text-gray-400 max-w-2xl leading-relaxed mb-10 font-light">
-                                The Biggest Student-Run Tech Community in TN.<br />
-                                <span className="text-white block mt-2">The only 'Inter-college students community' by the students for the students</span>
-                                <span className="text-gray-400 block mt-4 text-golden-1 italic">
-                                    We are here to help students build a career in Tech who say, <br />
-                                    <span className="text-white not-italic">“Perusa Pannanum, but enna Pannanum Therla”</span> <br />
-                                    ("Want to do something big, but don't know what to do").
-                                </span>
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-6">
-                                <button onClick={() => navigate('/auth')} className="bg-[#0061FE] text-white px-8 py-4 text-golden-1 font-bold rounded-sm hover:bg-[#0050d6] transition-all flex items-center justify-center gap-3 group">
-                                    Join Now <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-                                </button>
+                            {/* pill badge */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 16 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-white/10 bg-white/[0.05] backdrop-blur-md text-sm text-gray-300"
+                            >
+                                <Sparkles size={14} className="text-[#00C6F7]" />
+                                <span>Biggest Student-Run Tech Community in TN</span>
+                            </motion.div>
 
+                            <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold leading-[1.04] tracking-tighter mb-6">
+                                Code<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0061FE] to-[#00C6F7]">Sapiens</span><span className="text-[#00C6F7]">.</span>
+                            </h1>
+
+                            <p className="text-base sm:text-lg text-gray-400 leading-relaxed mb-4 max-w-xl">
+                                The only <span className="text-white font-semibold">inter-college students community</span> — by the students, for the students.
+                            </p>
+                            <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-10 max-w-xl italic">
+                                We help students who say{' '}
+                                <span className="text-white not-italic font-medium">"Perusa Pannanum, but enna Pannanum Therla"</span>{' '}
+                                <span className="text-gray-500 not-italic">— "Want to do something big, but don't know what to do."</span>
+                            </p>
+
+                            {/* CTAs */}
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <button
+                                    onClick={() => navigate('/auth')}
+                                    className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 text-base font-bold rounded-xl bg-gradient-to-r from-[#0061FE] to-[#00C6F7] text-white shadow-[0_0_40px_rgba(0,97,254,0.3)] hover:shadow-[0_0_60px_rgba(0,97,254,0.5)] transition-all duration-300 hover:-translate-y-0.5"
+                                >
+                                    Join Now
+                                    <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                                    {/* shine sweep */}
+                                    <span className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                                        <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                                    </span>
+                                </button>
+                                <button
+                                    onClick={() => { const el = document.getElementById('vision'); el && el.scrollIntoView({ behavior: 'smooth' }); }}
+                                    className="inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-sm text-gray-300 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-300"
+                                >
+                                    Explore
+                                    <ChevronDown size={16} />
+                                </button>
                             </div>
+
+                            {/* social-proof counters */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.7, duration: 0.6 }}
+                                className="flex items-center gap-8 mt-12 pt-8 border-t border-white/[0.06]"
+                            >
+                                {[
+                                    { value: '2 000+', label: 'Members' },
+                                    { value: '50+', label: 'Colleges' },
+                                    { value: '15+', label: 'Events' },
+                                ].map((s, i) => (
+                                    <div key={i} className="text-left">
+                                        <p className="text-xl sm:text-2xl font-bold text-white">{s.value}</p>
+                                        <p className="text-xs text-gray-500 uppercase tracking-widest mt-0.5">{s.label}</p>
+                                    </div>
+                                ))}
+                            </motion.div>
                         </motion.div>
 
-                        {/* Right: Dashboard Preview Image */}
+                        {/* Right — Dashboard Preview */}
                         <motion.div
-                            initial={{ opacity: 0, x: 50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 1, delay: 0.4 }}
+                            initial={{ opacity: 0, x: 60, scale: 0.97 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            transition={{ duration: 1, delay: 0.35 }}
                             className="relative mt-12 lg:mt-0"
                         >
-                            <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800 group transition-transform duration-500">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-[#0061FE]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none"></div>
+                            {/* glassmorphism card wrapper */}
+                            <div className="relative rounded-2xl overflow-hidden border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm shadow-[0_8px_60px_rgba(0,97,254,0.12)] group">
+                                {/* hover overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-[#0061FE]/15 via-transparent to-[#00C6F7]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-600 z-10 pointer-events-none" />
                                 <img
                                     src="https://res.cloudinary.com/dqudvximt/image/upload/v1771005975/Gemini_Generated_Image_il0qzjil0qzjil0q_1_cfh7ix.png"
                                     alt="CodeSapiens Dashboard"
-                                    className="w-full h-auto object-cover"
+                                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                                 />
                             </div>
-                            {/* Decorative Elements */}
-                            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#0061FE] rounded-full blur-[80px] opacity-30"></div>
-                            <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#9B0032] rounded-full blur-[80px] opacity-30"></div>
 
-                            {/* Badge Text */}
-                            <p className="text-gray-400 text-golden-1 italic text-right mt-4">Designed and built by students, for students.</p>
+                            {/* decorative blurs */}
+                            <div className="absolute -bottom-12 -right-12 w-44 h-44 bg-[#0061FE] rounded-full blur-[90px] opacity-25 pointer-events-none" />
+                            <div className="absolute -top-12 -left-12 w-44 h-44 bg-[#00C6F7] rounded-full blur-[90px] opacity-20 pointer-events-none" />
+
+                            {/* floating glassmorphism badge */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 1, duration: 0.5 }}
+                                className="absolute -bottom-5 left-6 right-6 sm:left-auto sm:right-6 sm:w-auto"
+                            >
+                                <div className="flex items-center gap-3 px-5 py-3 rounded-xl border border-white/10 bg-[#101020]/70 backdrop-blur-xl shadow-lg">
+                                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                    <span className="text-sm text-gray-300 font-medium">Designed & built by students, for students</span>
+                                </div>
+                            </motion.div>
                         </motion.div>
                     </div>
                 </div>
+
+                {/* scroll indicator */}
                 <motion.div
                     animate={{ y: [0, 10, 0] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className="absolute bottom-10 left-1/2 -translate-x-1/2 text-gray-500"
+                    transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2 text-gray-600 z-10"
                 >
-                    <ChevronDown size={32} />
+                    <ChevronDown size={28} />
                 </motion.div>
+
+                {/* bottom gradient fade */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#F7F5F2] to-transparent z-[5] pointer-events-none" />
             </section>
+
 
 
 
             {/* Vision Section */}
             <section id="vision" className="bg-[#F7F5F2] text-[#1E1919] py-12 md:py-16 relative">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 h-32 w-px bg-gradient-to-b from-[#101010] to-[#0061FE]"></div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 h-32 w-px bg-gradient-to-b from-[#060611] to-[#0061FE]"></div>
                 <div className="container mx-auto px-6">
                     <div className="grid md:grid-cols-2 gap-16 items-start">
                         <div className="relative md:sticky md:top-32">
